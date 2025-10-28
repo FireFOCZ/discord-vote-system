@@ -1,0 +1,13 @@
+# Node.js
+node_modules/
+.env
+*.log
+.DS_Store
+
+# Editor / IDE
+.vscode/
+.idea/
+
+# Build / Temp
+dist/
+tmp/
