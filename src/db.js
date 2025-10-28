@@ -1,31 +1,23 @@
-import mysql from 'mysql2/promise';
+import pkg from 'pg';
+const { Pool } = pkg;
 
-export const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
-  port: process.env.DB_PORT || 3306,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-  // 🩵 Připojení se obnoví při ztrátě
-  enableKeepAlive: true,
-  keepAliveInitialDelay: 10000
-});
+import dotenv from 'dotenv';
+dotenv.config();
 
-// 🧩 Oprava: automatické obnovení při "PROTOCOL_CONNECTION_LOST"
-pool.on('error', (err) => {
-  console.error('⚠️ MySQL pool error:', err.code);
-  if (err.code === 'PROTOCOL_CONNECTION_LOST') {
-    console.log('🔄 Obnovuji připojení k MySQL...');
+// 🟢 PostgreSQL připojení (Neon.tech)
+export const pool = new Pool({
+  connectionString: process.env.DB_URL,
+  ssl: {
+    rejectUnauthorized: false
   }
 });
 
+// 🧠 Test připojení
 try {
-  const conn = await pool.getConnection();
-  console.log(`✅ Připojeno k databázi ${process.env.DB_NAME} na ${process.env.DB_HOST}`);
-  conn.release();
+  const client = await pool.connect();
+  const result = await client.query('SELECT NOW() AS now');
+  console.log(`✅ Připojeno k PostgreSQL (Neon.tech) — ${result.rows[0].now}`);
+  client.release();
 } catch (err) {
-  console.error('❌ Chyba při připojování k DB:', err.message);
+  console.error('❌ Chyba při připojení k PostgreSQL:', err);
 }
