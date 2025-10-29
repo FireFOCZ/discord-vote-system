@@ -58,11 +58,10 @@ export default function makeRoutes(client) {
         return res.status(400).json({ error: 'Missing or invalid fields' });
       }
 
-      // 🕒 Spočítat konec hlasování (v SQL formátu – lokální čas, ne UTC!)
+      // 🕒 Spočítat konec hlasování (v SQL formátu)
       let end_at = null;
       if (duration_minutes && !isNaN(duration_minutes)) {
         const endTime = new Date(Date.now() + Number(duration_minutes) * 60_000);
-        // převedeme do lokálního času (Evropa/Praha)
         end_at = new Date(endTime.getTime() - endTime.getTimezoneOffset() * 60000)
           .toISOString()
           .slice(0, 19)
@@ -107,49 +106,47 @@ export default function makeRoutes(client) {
     }
   });
 
+  // 📋 Získání všech hlasování
   r.get('/polls', requireKey, async (req, res) => {
-  try {
-    const [rows] = await pool.execute(
-      'SELECT id, guild_id, channel_id, question, end_at, created_by, status FROM polls ORDER BY id DESC'
-    );
+    try {
+      const result = await pool.query(
+        'SELECT id, guild_id, channel_id, question, end_at, created_by, status FROM polls ORDER BY id DESC'
+      );
+      const rows = result.rows;
 
-    const enriched = await Promise.all(
-      rows.map(async (p) => {
-        try {
-          const guild = await client.guilds.fetch(p.guild_id).catch(() => null);
-          const channel = guild ? await guild.channels.fetch(p.channel_id).catch(() => null) : null;
+      const enriched = await Promise.all(
+        rows.map(async (p) => {
+          try {
+            const guild = await client.guilds.fetch(p.guild_id).catch(() => null);
+            const channel = guild ? await guild.channels.fetch(p.channel_id).catch(() => null) : null;
 
-          return {
-            ...p,
-            guild_name: guild ? guild.name : '(neznámý server)',
-            channel_name: channel ? `#${channel.name}` : '(neznámý kanál)',
-          };
-        } catch {
-          return {
-            ...p,
-            guild_name: '(neznámý)',
-            channel_name: '(neznámý)',
-          };
-        }
-      })
-    );
+            return {
+              ...p,
+              guild_name: guild ? guild.name : '(neznámý server)',
+              channel_name: channel ? `#${channel.name}` : '(neznámý kanál)',
+            };
+          } catch {
+            return {
+              ...p,
+              guild_name: '(neznámý)',
+              channel_name: '(neznámý)',
+            };
+          }
+        })
+      );
 
-    res.json(enriched);
-  } catch (err) {
-    console.error('❌ Chyba při načítání hlasování:', err);
-    res.status(500).json({ error: 'Database error' });
-  }
-});
-
+      res.json(enriched);
+    } catch (err) {
+      console.error('❌ Chyba při načítání hlasování:', err);
+      res.status(500).json({ error: 'Database error' });
+    }
+  });
 
   // 🗑️ Smazání hlasování
   r.delete('/polls/:id', requireKey, async (req, res) => {
     try {
       const pollIdRaw = req.params.id?.trim();
       const pollId = Number(String(pollIdRaw).trim());
-
-      console.log('🧩 DELETE požadavek – ID z URL:', req.params.id);
-      console.log('🧮 Po ořezu a převodu (Number):', pollId);
 
       if (!Number.isInteger(pollId) || pollId <= 0) {
         console.warn('❌ Neplatné ID z URL:', req.params.id);
@@ -158,8 +155,6 @@ export default function makeRoutes(client) {
 
       // ✅ Načtení hlasování
       const pollData = await getPoll(pollId);
-      console.log('📋 Výsledek getPoll:', pollData);
-
       if (!pollData) {
         console.warn('⚠️ Hlasování s ID', pollId, 'nenalezeno v DB.');
         return res.status(404).json({ error: 'Poll not found (getPoll returned null)' });
