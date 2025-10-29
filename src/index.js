@@ -65,10 +65,11 @@ client.on('interactionCreate', async (i) => {
 // 🕓 Automatická kontrola ukončených hlasování
 async function checkPolls() {
   try {
-    const [polls] = await pool.execute(
+    const result = await pool.query(
       "SELECT id, guild_id, channel_id, message_id, question, end_at, status FROM polls WHERE status='open' AND end_at IS NOT NULL"
     );
 
+    const polls = result.rows;
     const now = new Date();
 
     for (const poll of polls) {
@@ -95,7 +96,7 @@ async function checkPolls() {
       // ⏰ Pokud skončilo
       if (now >= endTime) {
         console.log(`⏰ Ukončuji hlasování ID ${poll.id}`);
-        await pool.execute("UPDATE polls SET status='closed' WHERE id=?", [poll.id]);
+        await pool.query("UPDATE polls SET status='closed' WHERE id=$1", [poll.id]);
 
         // 📊 Načti detaily
         const { poll: pollData, options } = await getPoll(poll.id);
@@ -107,16 +108,13 @@ async function checkPolls() {
         const embed = new EmbedBuilder()
           .setColor(0xff3c00)
           .setTitle('🏁 Arasaka Vote Results')
-          .setThumbnail('https://i.imgur.com/DwZ3ZsQ.png') // můžeš nahradit logem Arasaka
+          .setThumbnail('https://i.imgur.com/DwZ3ZsQ.png')
           .setDescription(`**Otázka:** ${pollData.question}\n\u200B`)
           .addFields(
             sorted.map((opt, i) => {
-              const percent = totalVotes
-                ? ((opt.vote_count * 100) / totalVotes).toFixed(1)
-                : 0;
+              const percent = totalVotes ? ((opt.vote_count * 100) / totalVotes).toFixed(1) : 0;
               const barCount = Math.round((percent / 100) * 20);
               const bar = '▰'.repeat(barCount) + '▱'.repeat(20 - barCount);
-
               const medal = medals[i] || '•';
               const highlight = i === 0 ? '**' : '';
 
@@ -128,9 +126,7 @@ async function checkPolls() {
             })
           )
           .setFooter({
-            text: `🔒 Hlasování uzavřeno — ${endTime.toLocaleString('cs-CZ', {
-              timeZone: 'Europe/Prague'
-            })}`,
+            text: `🔒 Hlasování uzavřeno — ${endTime.toLocaleString('cs-CZ', { timeZone: 'Europe/Prague' })}`,
             iconURL: 'https://i.imgur.com/DwZ3ZsQ.png'
           })
           .setTimestamp();
@@ -151,6 +147,7 @@ async function checkPolls() {
     console.error('❌ Chyba při kontrole hlasování:', err);
   }
 }
+
 
 // 🧠 Spustí se, když je bot připraven
 client.once('ready', () => {
