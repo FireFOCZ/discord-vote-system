@@ -90,7 +90,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete_id'])) {
               <span class="badge badge-closed">🔒 Uzavřeno</span>
             <?php endif; ?>
           </td>
-          <td><?= $p['end_at'] ?: '—' ?></td>
+        <td>
+          <?= $p['end_at']
+            ? (new DateTime($p['end_at']))
+                ->setTimezone(new DateTimeZone('Europe/Prague'))
+                ->format('d.m.Y H:i:s')
+            : '—'
+          ?>
+        </td>
+
           <td>
             <form method="post" onsubmit="return confirm('Opravdu smazat hlasování?')">
               <input type="hidden" name="delete_id" value="<?= $p['id'] ?>">

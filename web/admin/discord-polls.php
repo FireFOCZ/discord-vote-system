@@ -33,6 +33,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
   }
 }
+
+// 🔗 Invite URL pro přidání bota
+$BOT_CLIENT_ID = '1432755634473795605';
+$PERMS = 224320;
+$INVITE_URL = "https://discord.com/oauth2/authorize?client_id={$BOT_CLIENT_ID}&permissions={$PERMS}&scope=bot%20applications.commands";
 ?>
 <!doctype html>
 <html lang="cs" data-bs-theme="dark">
@@ -45,7 +50,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     body { background: radial-gradient(circle at top, #0b0b0d, #050506); color: #eee; }
     h1 { color: #ff6a00; text-shadow: 0 0 8px #ff4500; }
     .card { background: #141418; border-color: #1d1f24; border-radius: 10px; }
-    .btn-arsk { background: linear-gradient(135deg,#ff8a00,#ff3c00); border: 0; }
+    .btn-arsk { background: linear-gradient(135deg,#ff8a00,#ff3c00); border: 0; color: #fff; font-weight: 600; }
     .btn-arsk:hover { filter: brightness(1.1); }
     label { font-weight: 500; }
   </style>
@@ -53,6 +58,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 <body>
 <div class="container py-4">
   <h1 class="mb-4">🗳️ Vytvořit nové hlasování</h1>
+
+  <!-- 🧩 Tlačítko pro přidání bota na server -->
+  <div class="mb-4">
+    <a href="<?= htmlspecialchars($INVITE_URL) ?>" target="_blank"
+       class="btn px-4 py-2 fw-bold text-white"
+       style="background:linear-gradient(135deg,#ff8a00,#ff3c00);border:0;border-radius:6px;box-shadow:0 0 10px rgba(255,60,0,0.5);">
+       🤖 Přidat Arasaka Vote Bot na server
+    </a>
+  </div>
 
   <?php if($flash): ?>
     <div class="alert alert-<?= $flash['type'] ?>"><?= $flash['msg'] ?></div>
