@@ -14,6 +14,28 @@ export default function makeRoutes(client) {
     }));
     res.json(guilds);
   });
+  // 🤖 Seznam aktivních botů (v této instanci)
+r.get('/bots', requireKey, async (req, res) => {
+  try {
+    if (!client.user) return res.json([]);
+
+    const botInfo = {
+      id: client.user.id,
+      name: client.user.username,
+      avatar: client.user.displayAvatarURL({ size: 128 }),
+      status: client.ws.status === 0 ? 'online' : 'offline',
+      guilds: client.guilds.cache.size,
+      prefix: '/',
+      created_at: client.user.createdAt
+    };
+
+    res.json([botInfo]);
+  } catch (err) {
+    console.error('❌ Chyba při získávání seznamu botů:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
 
   // 💬 Získání seznamu textových kanálů v guildě
   r.get('/channels', requireKey, async (req, res) => {
